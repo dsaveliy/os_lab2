@@ -18,9 +18,9 @@
 ---
 ## Вывод с примером данных
  - Windows:
- <img width="1034" height="952" alt="image" src="https://github.com/user-attachments/assets/9757ccf2-547f-4fd5-80e4-75ebddd89fd5" />
+ - <img width="1035" height="914" alt="image" src="https://github.com/user-attachments/assets/f4afb922-3b7a-499c-ae30-5c7e59eeae66" />
  - Linux:
-<img width="1147" height="832" alt="image" src="https://github.com/user-attachments/assets/03a88d40-6fb4-40f4-a28d-45bc4cbc30f5" />
+ - <img width="1128" height="829" alt="image" src="https://github.com/user-attachments/assets/28a62ff6-33f5-4a71-9ba7-8aa1da02300d" />
 ---
 
 ## Вывод по резльутатам
