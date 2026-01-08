@@ -1,10 +1,16 @@
 ﻿#pragma once
 #include <vector>
+#include <mutex>
 
-// обработка конкретного блока в одном потоке
-void blockWorker(const std::vector<std::vector<int>>& a, const std::vector<std::vector<int>>& b,
-    std::vector<std::vector<int>>& result, int rowBlock, int colBlock, int k, int n, int numBlocks);
+// Обработка одного блока в одном потоке (для одного innerBlock)
+void blockWorker(const std::vector<std::vector<int>>& a,
+    const std::vector<std::vector<int>>& b,
+    std::vector<std::vector<int>>& result,
+    int rowBlock, int colBlock, int innerBlock,
+    int blockSize, int n);
 
-// распределение блоков умножения по потокам
-std::vector<std::vector<int>> multiplyMatricesByBlocksThread(const std::vector<std::vector<int>>& a,
-    const std::vector<std::vector<int>>& b, int k);
+// Распределение блоков умножения по потокам
+std::vector<std::vector<int>> multiplyMatricesByBlocksThread(
+    const std::vector<std::vector<int>>& a,
+    const std::vector<std::vector<int>>& b,
+    int blockSize);

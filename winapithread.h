@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <vector>
 
-// функция для блока gтока winapi
+// функция для блока winapi
 DWORD WINAPI BlockWorker(LPVOID lpParam);
 
 // распределение блоков умножения по потокам и создание обьектов параметров

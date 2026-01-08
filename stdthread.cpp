@@ -1,49 +1,70 @@
-﻿#include "matrix.h"
-#include "stdthread.h"
+﻿#include "stdthread.h"
 #include <thread>
+#include <algorithm>
+#include <vector>
+#include <mutex>
 
-std::vector<std::vector<int>> multiplyMatricesByBlocksThread(const std::vector<std::vector<int>>& a,
-    const std::vector<std::vector<int>>& b, int k) {
-    int n = a.size();
-    std::vector<std::vector<int>> result(n, std::vector<int>(n, 0));
-    int numBlocks = n / k + (n % k != 0 ? 1 : 0);
+std::mutex result_mutex;
 
-    // фактические разбил ту же логику multiplyMatricesByBlocks на потоки
-    std::vector<std::thread> threads;
-    for (int rowBlock = 0; rowBlock < numBlocks; ++rowBlock)
-        for (int colBlock = 0; colBlock < numBlocks; ++colBlock)
-            threads.emplace_back(blockWorker, std::cref(a), std::cref(b), std::ref(result),
-                rowBlock, colBlock, k, n, numBlocks);
-    for (auto& t : threads) 
-        t.join();
-    return result;
+void blockWorker(const std::vector<std::vector<int>>& a,
+    const std::vector<std::vector<int>>& b,
+    std::vector<std::vector<int>>& result,
+    int rowBlock, int colBlock, int innerBlock,
+    int blockSize, int n) {
+
+    int rowStartA = rowBlock * blockSize;
+    int rowEndA = std::min(rowStartA + blockSize, n);
+    int colStartA = innerBlock * blockSize;
+    int colEndA = std::min(colStartA + blockSize, n);
+
+    int rowStartB = innerBlock * blockSize;
+    int rowEndB = std::min(rowStartB + blockSize, n);
+    int colStartB = colBlock * blockSize;
+    int colEndB = std::min(colStartB + blockSize, n);
+
+    int rowLen = rowEndA - rowStartA;
+    int colLen = colEndB - colStartB;
+    int innerLen = colEndA - colStartA;
+
+    for (int i = 0; i < rowLen; ++i) {
+        int globalRow = rowStartA + i;
+        for (int j = 0; j < colLen; ++j) {
+            int globalCol = colStartB + j;
+            int sum = 0;
+            for (int k = 0; k < innerLen; ++k) {
+                int globalK = colStartA + k;
+                sum += a[globalRow][globalK] * b[globalK][globalCol];
+            }
+            std::lock_guard<std::mutex> lock(result_mutex);
+            result[globalRow][globalCol] += sum;
+        }
+    }
 }
 
-void blockWorker(const std::vector<std::vector<int>>& a, const std::vector<std::vector<int>>& b,
-    std::vector<std::vector<int>>& result, int rowBlock, int colBlock, int k, int n, int numBlocks) {
-    int rowStart = rowBlock * k;
-    int colStart = colBlock * k;
-    int rowLen = std::min(k, n - rowStart);
-    int colLen = std::min(k, n - colStart);
-    std::vector<std::vector<int>> block(rowLen, std::vector<int>(colLen, 0));
+std::vector<std::vector<int>> multiplyMatricesByBlocksThread(
+    const std::vector<std::vector<int>>& a,
+    const std::vector<std::vector<int>>& b,
+    int blockSize) {
 
-    for (int innerBlock = 0; innerBlock < numBlocks; ++innerBlock) {
-        int innerStart = innerBlock * k;
-        int midLen = std::min(k, n - innerStart);
-        std::vector<std::vector<int>> aBlock(rowLen, std::vector<int>(midLen));
-        std::vector<std::vector<int>> bBlock(midLen, std::vector<int>(colLen));
-        for (int i = 0; i < rowLen; ++i)
-            for (int m = 0; m < midLen; ++m)
-                aBlock[i][m] = a[rowStart + i][innerStart + m];
-        for (int m = 0; m < midLen; ++m)
-            for (int j = 0; j < colLen; ++j)
-                bBlock[m][j] = b[innerStart + m][colStart + j];
-        std::vector<std::vector<int>> blockResult = multiplyMatrices(aBlock, bBlock);
-        for (int i = 0; i < rowLen; ++i)
-            for (int j = 0; j < colLen; ++j)
-                block[i][j] += blockResult[i][j];
+    int n = a.size();
+    std::vector<std::vector<int>> result(n, std::vector<int>(n, 0));
+
+    int numBlocks = n / blockSize + (n % blockSize != 0 ? 1 : 0);
+    std::vector<std::thread> threads;
+    for (int rowBlock = 0; rowBlock < numBlocks; ++rowBlock) {
+        for (int colBlock = 0; colBlock < numBlocks; ++colBlock) {
+            for (int innerBlock = 0; innerBlock < numBlocks; ++innerBlock) {
+                threads.emplace_back(blockWorker,
+                    std::cref(a), std::cref(b), std::ref(result),
+                    rowBlock, colBlock, innerBlock,
+                    blockSize, n);
+            }
+        }
     }
-    for (int i = 0; i < rowLen; ++i)
-        for (int j = 0; j < colLen; ++j)
-            result[rowStart + i][colStart + j] = block[i][j];
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    return result;
 }

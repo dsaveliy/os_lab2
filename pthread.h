@@ -1,6 +1,20 @@
-#pragma once
+#pragma o#pragma once
 #include <vector>
 
-void* block_worker(void* p);
+struct WorkerArgs {
+    const std::vector<std::vector<int>>* a;
+    const std::vector<std::vector<int>>* b;
+    std::vector<std::vector<int>>* result;
+    int rowBlock;
+    int colBlock;
+    int innerBlock;
+    int k;
+    int n;
+};
 
-std::vector<std::vector<int>> multiplyMatricesByBlocksPthread(const std::vector<std::vector<int>>& a, const std::vector<std::vector<int>>& b, int k, int max_threads = 0);
+void* block_worker(void* p);
+std::vector<std::vector<int>> multiplyMatricesByBlocksPthread(
+    const std::vector<std::vector<int>>& a,
+    const std::vector<std::vector<int>>& b,
+    int k
+);
